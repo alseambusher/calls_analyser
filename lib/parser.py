@@ -24,20 +24,6 @@ def csv_to_json():
     json_file = open(config.data_json, "w")
     json.dump(new_data, json_file, ensure_ascii=True)
 
-
-# gets noun phrases
-def get_NP(document):
-    sentences = nltk.sent_tokenize(document)
-    sentences = [nltk.word_tokenize(sent) for sent in sentences]
-    sentences = [nltk.pos_tag(sent) for sent in sentences][0]
-    grammar = "NP: {<JJ>*<NN|NNP|CD>*}"
-    cp = nltk.RegexpParser(grammar)
-    nlp_tree = cp.parse(sentences)
-
-    for _node in nlp_tree:
-        if _node.node is "NP":
-            yield " ".join([_word[0] for _word in _node])
-
 # generates problem patterns
 class ProblemPatterns:
     def __init__(self, data, length, _type="domain", weight_min=0):
@@ -49,17 +35,15 @@ class ProblemPatterns:
             self.graph = self.get_column_chain_graph(config.table_domain)
         elif _type is "problem_type":
             self.graph = self.get_column_chain_graph(config.table_problem_type)
-        elif _type is "NP":
-            self.graph = self.get_NP_chain_graph()
+        elif _type is "problem":
+            self.graph = self.get_problem_chain_graph()
         else:
             self.graph = {}
 
         self.patterns = self.get_problem_subgraphs(length)
 
-    # pass column index construct graph
-    def get_column_chain_graph(self, table_column):
-
-        # get history of problems ordered by time from each of the customers
+    # get history of problems ordered by time from each of the customers
+    def get_customer_history(self, table_column):
         customer_history = {}
         for _id in range(0, len(self.data)):
             _id = str(_id)
@@ -67,7 +51,25 @@ class ProblemPatterns:
                 customer_history[self.data[_id][config.table_cid]].append(self.data[_id][table_column])
             except:
                 customer_history[self.data[_id][config.table_cid]] = [self.data[_id][table_column]]
+        return customer_history
 
+    # gets noun phrases
+    @staticmethod
+    def get_NP(document):
+        sentences = nltk.sent_tokenize(document)
+        sentences = [nltk.word_tokenize(sent) for sent in sentences]
+        sentences = [nltk.pos_tag(sent) for sent in sentences][0]
+        grammar = "NP: {<JJ>*<NN|NNP|CD>*}"
+        cp = nltk.RegexpParser(grammar)
+        nlp_tree = cp.parse(sentences)
+
+        for _node in nlp_tree:
+            if _node.node is "NP":
+                yield " ".join([_word[0] for _word in _node])
+
+    # pass column index construct graph
+    def get_column_chain_graph(self, table_column):
+        customer_history = self.get_customer_history(table_column)
         # now create a directed problem graph
         graph = {}
         for history in customer_history.itervalues():
@@ -77,16 +79,35 @@ class ProblemPatterns:
                 if problem is not u'':
                     if prev_problem is not None:
                         try:
-                            graph[problem][prev_problem] += 1
+                            #graph[problem][prev_problem] += 1
+                            graph[prev_problem][problem] += 1
                         except:
                             # new edge
-                            graph[problem] = dict({prev_problem: 1})
+                            graph[prev_problem] = dict({problem: 1})
+                            #graph[problem] = dict({prev_problem: 1})
                     prev_problem = problem
         return graph
 
-    def get_NP_chain_graph(self):
-        #todo
+    def get_problem_chain_graph(self):
         graph = {}
+        # get problem history of each customer
+        customer_history = self.get_customer_history(config.table_problem)
+        for history in customer_history.itervalues():
+            prev_problem = None
+            NP_prev_problem = None
+            for problem in history:
+                if problem is not u'':
+                    if prev_problem is not None:
+                        NP_problem = self.get_NP(problem)
+                        for phrase1 in NP_prev_problem:
+                            for phrase2 in NP_problem:
+                                print phrase1,phrase2
+                                try:
+                                    graph[phrase1][phrase2] += 1
+                                except:
+                                    graph[phrase1] = dict({phrase2: 1})
+                        prev_problem = problem
+                        NP_prev_problem = NP_problem
         return graph
 
 
@@ -99,8 +120,6 @@ class ProblemPatterns:
 
     def get_longest_pattern(self, node, sequence, length):
         patterns = []
-        adj_nodes = self.graph[node].keys()
-
         for adj in self.graph[node].iterkeys():
             # if last node permittable is supposed to be added OR
             # if you have reached leaf nodes

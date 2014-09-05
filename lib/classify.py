@@ -1,13 +1,12 @@
-import parser
+from parser import ProblemPatterns
 import config
-from temp import DATA
 
 # classifies based on noun phrases
-def NP_classifier(documents):
+def np_classifier(documents):
     classification = {}
     for _id in documents.iterkeys():
         problem = documents[_id][config.table_problem]
-        for NP in parser.get_NP(problem):
+        for NP in ProblemPatterns.get_NP(problem):
             try:
                 classification[NP].append(_id)
             except:
