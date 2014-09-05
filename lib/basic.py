@@ -41,7 +41,7 @@ def csv_to_json():
 def np_to_json(calls):
     data = {}
     # number of threads doing this operation
-    pieces = 5
+    pieces = 30
 
     def np_to_json_part(part):
         for _id in part:
@@ -64,4 +64,4 @@ def np_to_json(calls):
     for thread in threads:
         thread.join()
 
-    json.dump(data, open(config.data_np+"_", "w"), ensure_ascii=True)
+    json.dump(data, open(config.data_np, "w"), ensure_ascii=True)

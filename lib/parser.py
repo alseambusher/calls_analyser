@@ -42,7 +42,7 @@ class ProblemPatterns:
         nlp_tree = cp.parse(sentences)
         for _node in nlp_tree:
             try:
-                if _node.node is "NP":
+                if _node.node == "NP":
                     data.append(" ".join([_word[0] for _word in _node]))
             except:
                 pass
