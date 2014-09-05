@@ -3,11 +3,13 @@
 
 # set true if json file has to be created
 pre_processing_required = False
+NP_generation_required = True
 
 # Files
 data_folder = "data/"
 data_csv = data_folder + "data.csv"
 data_json = data_folder + "data.json"
+data_np = data_folder + "NP.json"
 csv_delimiter = "ā"
 
 # table

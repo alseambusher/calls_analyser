@@ -1,7 +1,7 @@
 *.swp
 *~
 *.pyc
-data/*.json
+data/data.json
 data/*.csv
 data/*.rpt
 .idea

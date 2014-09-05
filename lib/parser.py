@@ -1,28 +1,5 @@
 import nltk
 import config
-import json
-
-# converts main csv to main json
-def csv_to_json():
-    _file = open(config.data_csv)
-    _data = ("".join(_file.readlines())).replace("\r\n", " ").split(config.csv_delimiter)
-    new_data = {}
-    _part = []
-    _part_size = config.table_size - 1
-    _part_id = 0
-    for index in range(0, len(_data)):
-        if index % _part_size is 0 and index is not 0:
-            _part.append(_data[index].split(" ")[0])
-            new_data[_part_id] = _part[:]
-            _part_id += 1
-            try:
-                _part = [" ".join(_data[index].split(" ")[1:])]
-            except:
-                pass
-        else:
-            _part.append(_data[index])
-    json_file = open(config.data_json, "w")
-    json.dump(new_data, json_file, ensure_ascii=True)
 
 # generates problem patterns
 class ProblemPatterns:
@@ -56,16 +33,20 @@ class ProblemPatterns:
     # gets noun phrases
     @staticmethod
     def get_NP(document):
+        data = []
         sentences = nltk.sent_tokenize(document)
         sentences = [nltk.word_tokenize(sent) for sent in sentences]
         sentences = [nltk.pos_tag(sent) for sent in sentences][0]
         grammar = "NP: {<JJ>*<NN|NNP|CD>*}"
         cp = nltk.RegexpParser(grammar)
         nlp_tree = cp.parse(sentences)
-
         for _node in nlp_tree:
-            if _node.node is "NP":
-                yield " ".join([_word[0] for _word in _node])
+            try:
+                if _node.node is "NP":
+                    data.append(" ".join([_word[0] for _word in _node]))
+            except:
+                pass
+        return data
 
     # pass column index construct graph
     def get_column_chain_graph(self, table_column):
@@ -79,16 +60,15 @@ class ProblemPatterns:
                 if problem is not u'':
                     if prev_problem is not None:
                         try:
-                            #graph[problem][prev_problem] += 1
                             graph[prev_problem][problem] += 1
                         except:
                             # new edge
                             graph[prev_problem] = dict({problem: 1})
-                            #graph[problem] = dict({prev_problem: 1})
                     prev_problem = problem
         return graph
 
     def get_problem_chain_graph(self):
+        # todo fix this
         graph = {}
         # get problem history of each customer
         customer_history = self.get_customer_history(config.table_problem)
@@ -97,17 +77,17 @@ class ProblemPatterns:
             NP_prev_problem = None
             for problem in history:
                 if problem is not u'':
+                    NP_problem = self.get_NP(problem)
                     if prev_problem is not None:
-                        NP_problem = self.get_NP(problem)
                         for phrase1 in NP_prev_problem:
                             for phrase2 in NP_problem:
-                                print phrase1,phrase2
+                                print phrase1, phrase2
                                 try:
                                     graph[phrase1][phrase2] += 1
                                 except:
                                     graph[phrase1] = dict({phrase2: 1})
-                        prev_problem = problem
-                        NP_prev_problem = NP_problem
+                    prev_problem = problem
+                    NP_prev_problem = NP_problem
         return graph
 
 
