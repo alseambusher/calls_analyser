@@ -1,11 +1,19 @@
 import config
 import json
-import temp
-from lib import parser
+from lib.parser import csv_to_json, ProblemPatterns
 
 if config.pre_processing_required:
-    parser.pre_processing(config.data_csv, config.data_json)
+    csv_to_json()
 
-temp.DATA = {"calls": json.load(open(config.data_json))}
+data = json.load(open(config.data_json))
 
-# print parser.problem_patterns().to_list()
+#print ProblemPatterns(data, 3).to_list()
+"""a=ProblemPatterns(data, 8, _type="problem_type").get_graph()
+for i in a.iterkeys():
+    for j in a[i].iterkeys():
+        print i,j,a[i][j]"""
+#data = ProblemPatterns(data, 8, _type="problem_type").to_list()
+data = ProblemPatterns(data, 8).to_list()
+for item in data:
+    print item
+

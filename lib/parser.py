@@ -3,9 +3,9 @@ import config
 import json
 
 # converts main csv to main json
-def pre_processing(csv_file, json_file):
-    _file = open(csv_file)
-    _data = ("".join(_file.readlines())).replace("\r\n", " ").split(",")
+def csv_to_json():
+    _file = open(config.data_csv)
+    _data = ("".join(_file.readlines())).replace("\r\n", " ").split(config.csv_delimiter)
     new_data = {}
     _part = []
     _part_size = config.table_size - 1
@@ -21,7 +21,7 @@ def pre_processing(csv_file, json_file):
                 pass
         else:
             _part.append(_data[index])
-    json_file = open(json_file, "w")
+    json_file = open(config.data_json, "w")
     json.dump(new_data, json_file, ensure_ascii=True)
 
 
@@ -38,43 +38,97 @@ def get_NP(document):
         if _node.node is "NP":
             yield " ".join([_word[0] for _word in _node])
 
-
 # generates problem patterns
-# todo modify the class to more generic form
 class ProblemPatterns:
-    def __init__(self, data):
+    def __init__(self, data, length, _type="domain", weight_min=0):
         self.data = data
-        graph = self.get_problem_chain_graph()
-        self.patterns = self.get_problem_subgraphs(graph)
+        self.max_length = length
+        self.weight_min = weight_min
 
-    def get_problem_chain_graph(self):
+        if _type is "domain":
+            self.graph = self.get_column_chain_graph(config.table_domain)
+        elif _type is "problem_type":
+            self.graph = self.get_column_chain_graph(config.table_problem_type)
+        elif _type is "NP":
+            self.graph = self.get_NP_chain_graph()
+        else:
+            self.graph = {}
+
+        self.patterns = self.get_problem_subgraphs(length)
+
+    # pass column index construct graph
+    def get_column_chain_graph(self, table_column):
 
         # get history of problems ordered by time from each of the customers
         customer_history = {}
         for _id in range(0, len(self.data)):
+            _id = str(_id)
             try:
-                customer_history[self.data[_id][config.table_cid]].append(self.data[_id][config.table_problem])
+                customer_history[self.data[_id][config.table_cid]].append(self.data[_id][table_column])
             except:
-                customer_history[self.data[_id][config.table_cid]] = [self.data[_id][config.table_problem]]
+                customer_history[self.data[_id][config.table_cid]] = [self.data[_id][table_column]]
 
         # now create a directed problem graph
         graph = {}
-        for history in customer_history:
+        for history in customer_history.itervalues():
             #history has history of individual customer
             prev_problem = None
             for problem in history:
-                if prev_problem is not None:
-                    try:
-                        graph[problem][prev_problem] += 1
-                    except:
-                        # new edge
-                        graph[problem] = {prev_problem: 1}
-
+                if problem is not u'':
+                    if prev_problem is not None:
+                        try:
+                            graph[problem][prev_problem] += 1
+                        except:
+                            # new edge
+                            graph[problem] = dict({prev_problem: 1})
+                    prev_problem = problem
         return graph
 
-    def get_problem_subgraphs(self, graph):
-        # TODO
-        return []
+    def get_NP_chain_graph(self):
+        #todo
+        graph = {}
+        return graph
+
+
+    def get_problem_subgraphs(self, length):
+        patterns = []
+        for node in self.graph.iterkeys():
+            patterns.extend(self.get_longest_pattern(node, [node], length - 1))
+
+        return sorted(patterns, key=self.sequence_to_weight, reverse=True)
+
+    def get_longest_pattern(self, node, sequence, length):
+        patterns = []
+        adj_nodes = self.graph[node].keys()
+
+        for adj in self.graph[node].iterkeys():
+            # if last node permittable is supposed to be added OR
+            # if you have reached leaf nodes
+            if length == 1 or len(self.graph[adj]) == 0:
+                # discard the sequence below weight limit
+                if self.sequence_to_weight(sequence+[adj]) > self.weight_min:
+                    patterns.append(sequence+[adj])
+            # if you have encountered a cycle and have already entered the cycle, skip it
+            elif ("".join(sequence)).find(sequence[-1]+adj) is not -1:
+                patterns.append(sequence)
+            #elif sequence[-1] == adj and len(sequence) > 1 and sequence[-2] == sequence[-1]:
+                #patterns.append(sequence)
+                #patterns.extend(self.get_longest_pattern(adj, sequence, length))
+            else:
+                patterns.extend(self.get_longest_pattern(adj, sequence+[adj], length-1))
+        return patterns
+
+    def sequence_to_weight(self, sequence):
+        weight = 0
+        node1 = sequence[0]
+        for node2 in sequence[1:]:
+            weight += self.graph[node1][node2]
+            node1 = node2
+        return weight
 
     def to_list(self):
         return self.patterns
+
+    def get_graph(self):
+        return self.graph
+
