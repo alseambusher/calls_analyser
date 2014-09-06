@@ -4,5 +4,7 @@
 data/data.json
 data/*.csv
 data/*.rpt
+data/*.graph
+data/*.list
 .idea
 temp

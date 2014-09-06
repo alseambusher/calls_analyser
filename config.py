@@ -3,7 +3,8 @@
 
 # set true if json file has to be created
 pre_processing_required = False
-NP_generation_required = True
+# if noun phrases have to be created then set it to true
+NP_generation_required = False
 
 # Files
 data_folder = "data/"
