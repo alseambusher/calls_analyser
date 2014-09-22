@@ -1,5 +1,6 @@
 import nltk
 import config
+import json
 
 # generates problem patterns
 class ProblemPatterns:
@@ -20,14 +21,21 @@ class ProblemPatterns:
         self.patterns = self.get_problem_subgraphs(length)
 
     # get history of problems ordered by time from each of the customers
-    def get_customer_history(self, table_column):
+    # set get_ids to true if you want ids and not any columns
+    def get_customer_history(self, table_column=None, get_ids=False):
         customer_history = {}
         for _id in range(0, len(self.data)):
             _id = str(_id)
-            try:
-                customer_history[self.data[_id][config.table_cid]].append(self.data[_id][table_column])
-            except:
-                customer_history[self.data[_id][config.table_cid]] = [self.data[_id][table_column]]
+            if not get_ids:
+                try:
+                    customer_history[self.data[_id][config.table_cid]].append(self.data[_id][table_column])
+                except:
+                    customer_history[self.data[_id][config.table_cid]] = [self.data[_id][table_column]]
+            else:
+                try:
+                    customer_history[self.data[_id][config.table_cid]].append(_id)
+                except:
+                    customer_history[self.data[_id][config.table_cid]] = [_id]
         return customer_history
 
     # gets noun phrases
@@ -49,8 +57,8 @@ class ProblemPatterns:
         return data
 
     # pass column index construct graph
-    def get_column_chain_graph(self, table_column):
-        customer_history = self.get_customer_history(table_column)
+    def get_column_chain_graph(self, column):
+        customer_history = self.get_customer_history(table_column=column)
         # now create a directed problem graph
         graph = {}
         for history in customer_history.itervalues():
@@ -68,28 +76,28 @@ class ProblemPatterns:
         return graph
 
     def get_problem_chain_graph(self):
-        # todo fix this
         graph = {}
-        # get problem history of each customer
-        customer_history = self.get_customer_history(config.table_problem)
-        for history in customer_history.itervalues():
+        noun_phrases = json.load(open(config.data_np))
+        # get call id history of each customer
+        customer_history = self.get_customer_history(get_ids=True)
+        for _ids in customer_history.itervalues():
             prev_problem = None
-            NP_prev_problem = None
-            for problem in history:
-                if problem is not u'':
-                    NP_problem = self.get_NP(problem)
+            for _id in _ids:
+                try:
+                    problem = noun_phrases[_id]
+                except:
+                    problem = []
+                if problem:
                     if prev_problem is not None:
-                        for phrase1 in NP_prev_problem:
-                            for phrase2 in NP_problem:
-                                print phrase1, phrase2
+                        for phrase1 in prev_problem:
+                            for phrase2 in problem:
                                 try:
-                                    graph[phrase1][phrase2] += 1
+                                    graph[phrase1][phrase2] +=1
                                 except:
                                     graph[phrase1] = dict({phrase2: 1})
                     prev_problem = problem
-                    NP_prev_problem = NP_problem
-        return graph
 
+        return graph
 
     def get_problem_subgraphs(self, length):
         patterns = []
@@ -103,16 +111,13 @@ class ProblemPatterns:
         for adj in self.graph[node].iterkeys():
             # if last node permittable is supposed to be added OR
             # if you have reached leaf nodes
-            if length == 1 or len(self.graph[adj]) == 0:
+            if length == 1 or adj not in self.graph or len(self.graph[adj]) == 0:
                 # discard the sequence below weight limit
                 if self.sequence_to_weight(sequence+[adj]) > self.weight_min:
                     patterns.append(sequence+[adj])
             # if you have encountered a cycle and have already entered the cycle, skip it
             elif ("".join(sequence)).find(sequence[-1]+adj) is not -1:
                 patterns.append(sequence)
-            #elif sequence[-1] == adj and len(sequence) > 1 and sequence[-2] == sequence[-1]:
-                #patterns.append(sequence)
-                #patterns.extend(self.get_longest_pattern(adj, sequence, length))
             else:
                 patterns.extend(self.get_longest_pattern(adj, sequence+[adj], length-1))
         return patterns
@@ -125,9 +130,27 @@ class ProblemPatterns:
             node1 = node2
         return weight
 
+    def to_plot(self):
+        # todo
+        pass
+
     def to_list(self):
         return self.patterns
 
     def get_graph(self):
         return self.graph
+
+    def get_sorted_degrees(self):
+        weights = {}
+        nodes = set()
+        for node in self.graph.iterkeys():
+            for adj in self.graph[node].iterkeys():
+                try:
+                    weights[adj] += 1
+                except:
+                    weights[adj] = 1
+                nodes.add(adj)
+
+        return weights, sorted(nodes, key=lambda x: weights[x], reverse=True)
+
 

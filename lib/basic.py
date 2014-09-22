@@ -26,18 +26,6 @@ def csv_to_json():
     json.dump(new_data, json_file, ensure_ascii=True)
 
 # maps problem id with noun phrases of problem
-"""def np_to_json(calls):
-    data = {}
-    for _id in calls.iterkeys():
-        problem = calls[_id][config.table_problem]
-        if problem is u'':
-            data[_id] = []
-        else:
-            phrases = ProblemPatterns.get_NP(problem)
-            data[_id] = phrases
-    json.dump(data, open(config.data_np,"w"), ensure_ascii=True)"""
-
-# maps problem id with noun phrases of problem
 def np_to_json(calls):
     data = {}
     # number of threads doing this operation
