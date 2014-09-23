@@ -19,7 +19,7 @@ for i in a.iterkeys():
 #data = ProblemPatterns(data, 8, _type="problem_type").to_list()
 #data = ProblemPatterns(data, 20, _type="domain").to_list()
 pattern = ProblemPatterns(data, 8, _type="problem")
-weights, nodes = pattern.get_sorted_degrees()
+weights, nodes = pattern.get_sorted_degrees(isToDegree=True)
 for node in nodes:
     print node, weights[node]
 """data = pattern.to_list()

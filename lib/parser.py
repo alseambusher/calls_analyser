@@ -90,7 +90,9 @@ class ProblemPatterns:
                 if problem:
                     if prev_problem is not None:
                         for phrase1 in prev_problem:
+                            phrase1 = phrase1.lower()
                             for phrase2 in problem:
+                                phrase2 = phrase2.lower()
                                 try:
                                     graph[phrase1][phrase2] +=1
                                 except:
@@ -140,15 +142,17 @@ class ProblemPatterns:
     def get_graph(self):
         return self.graph
 
-    def get_sorted_degrees(self):
+    # TO will give number of nodes pointing to node. FROM is opposite
+    def get_sorted_degrees(self, isToDegree = True):
         weights = {}
         nodes = set()
         for node in self.graph.iterkeys():
             for adj in self.graph[node].iterkeys():
+                index = adj if isToDegree else node
                 try:
-                    weights[adj] += 1
+                    weights[index] += 1
                 except:
-                    weights[adj] = 1
+                    weights[index] = 1
                 nodes.add(adj)
 
         return weights, sorted(nodes, key=lambda x: weights[x], reverse=True)
