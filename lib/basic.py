@@ -1,7 +1,8 @@
 import json
 import config
-from parser import ProblemPatterns
+from parser import get_noun_phrases
 import threading
+
 
 # converts main csv to main json
 def csv_to_json():
@@ -25,6 +26,7 @@ def csv_to_json():
     json_file = open(config.data_json, "w")
     json.dump(new_data, json_file, ensure_ascii=True)
 
+
 # maps problem id with noun phrases of problem
 def np_to_json(calls):
     data = {}
@@ -37,7 +39,7 @@ def np_to_json(calls):
             if problem is u'':
                 data[_id] = []
             else:
-                phrases = ProblemPatterns.get_NP(problem)
+                phrases = get_noun_phrases(problem)
                 data[_id] = phrases
 
     keys = calls.keys()

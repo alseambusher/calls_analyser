@@ -1,7 +1,7 @@
 import config
-import json
 from lib.parser import ProblemPatterns
-from lib.basic import csv_to_json, np_to_json
+from lib.basic import *
+from lib.graph import plot
 
 if config.pre_processing_required:
     csv_to_json()
@@ -17,7 +17,7 @@ for i in a.iterkeys():
     for j in a[i].iterkeys():
         print i+"<---->"+j, a[i][j]"""
 graph = ProblemPatterns(data, 8, _type="domain").get_graph()
-ProblemPatterns.to_plot(graph)
+plot(graph)
 #data = ProblemPatterns(data, 20, _type="domain").to_list()
 #pattern = ProblemPatterns(data, 8, _type="problem")
 #weights, nodes = pattern.get_sorted_degrees(isToDegree=True)

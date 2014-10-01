@@ -1,10 +1,26 @@
 import nltk
 import config
 import json
-import networkx as nx
-import matplotlib.pyplot as plt
 
-# generates problem patterns
+
+# gets noun phrases
+def get_noun_phrases(document):
+    data = []
+    sentences = nltk.sent_tokenize(document)
+    sentences = [nltk.word_tokenize(sent) for sent in sentences]
+    sentences = [nltk.pos_tag(sent) for sent in sentences][0]
+    grammar = "NP: {<JJ>*<NN|NNP|CD>*}"
+    cp = nltk.RegexpParser(grammar)
+    nlp_tree = cp.parse(sentences)
+    for _node in nlp_tree:
+        try:
+            if _node.node == "NP":
+                data.append(" ".join([_word[0] for _word in _node]))
+        except:
+            pass
+    return data
+
+
 class ProblemPatterns:
     def __init__(self, data, length, _type="domain", weight_min=0):
         self.data = data
@@ -39,24 +55,6 @@ class ProblemPatterns:
                 except:
                     customer_history[self.data[_id][config.table_cid]] = [_id]
         return customer_history
-
-    # gets noun phrases
-    @staticmethod
-    def get_NP(document):
-        data = []
-        sentences = nltk.sent_tokenize(document)
-        sentences = [nltk.word_tokenize(sent) for sent in sentences]
-        sentences = [nltk.pos_tag(sent) for sent in sentences][0]
-        grammar = "NP: {<JJ>*<NN|NNP|CD>*}"
-        cp = nltk.RegexpParser(grammar)
-        nlp_tree = cp.parse(sentences)
-        for _node in nlp_tree:
-            try:
-                if _node.node == "NP":
-                    data.append(" ".join([_word[0] for _word in _node]))
-            except:
-                pass
-        return data
 
     # pass column index construct graph
     def get_column_chain_graph(self, column):
@@ -113,7 +111,7 @@ class ProblemPatterns:
     def get_longest_pattern(self, node, sequence, length):
         patterns = []
         for adj in self.graph[node].iterkeys():
-            # if last node permittable is supposed to be added OR
+            # if last node permitable is supposed to be added OR
             # if you have reached leaf nodes
             if length == 1 or adj not in self.graph or len(self.graph[adj]) == 0:
                 # discard the sequence below weight limit
@@ -134,46 +132,8 @@ class ProblemPatterns:
             node1 = node2
         return weight
 
-    @staticmethod
-    def to_plot(graph):
-        G = nx.DiGraph()
-        labels = []
-        for node in graph.iterkeys():
-            G.add_node(node)
-            labels.append(node)
-
-        for node1 in graph.iterkeys():
-            for node2 in graph[node1].iterkeys():
-                try:
-                    G.add_edge(node1, node2)
-                except:
-                    G.add_node(node2)
-                    G.add_edge(node1, node2)
-
-        nx.draw(G,with_labels=True)
-        plt.show()
-        return G
-
-
     def to_list(self):
         return self.patterns
 
     def get_graph(self):
         return self.graph
-
-    # TO will give number of nodes pointing to node. FROM is opposite
-    def get_sorted_degrees(self, isToDegree = True):
-        weights = {}
-        nodes = set()
-        for node in self.graph.iterkeys():
-            for adj in self.graph[node].iterkeys():
-                index = adj if isToDegree else node
-                try:
-                    weights[index] += 1
-                except:
-                    weights[index] = 1
-                nodes.add(adj)
-
-        return weights, sorted(nodes, key=lambda x: weights[x], reverse=True)
-
-
