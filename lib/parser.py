@@ -1,6 +1,8 @@
 import nltk
 import config
 import json
+import networkx as nx
+import matplotlib.pyplot as plt
 
 # generates problem patterns
 class ProblemPatterns:
@@ -132,9 +134,26 @@ class ProblemPatterns:
             node1 = node2
         return weight
 
-    def to_plot(self):
-        # todo
-        pass
+    @staticmethod
+    def to_plot(graph):
+        G = nx.DiGraph()
+        labels = []
+        for node in graph.iterkeys():
+            G.add_node(node)
+            labels.append(node)
+
+        for node1 in graph.iterkeys():
+            for node2 in graph[node1].iterkeys():
+                try:
+                    G.add_edge(node1, node2)
+                except:
+                    G.add_node(node2)
+                    G.add_edge(node1, node2)
+
+        nx.draw(G,with_labels=True)
+        plt.show()
+        return G
+
 
     def to_list(self):
         return self.patterns
